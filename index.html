@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GPS Logger</title>
+  <title>GPS Logger (Accurate)</title>
 
   <style>
     body {
@@ -54,23 +54,23 @@
           fetch(SCRIPT_URL, {
             method: "POST",
             mode: "no-cors",
-            body: JSON.stringify({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                device: "iPhone Chrome"
-            })
-            })
-            .then(() => {
-            document.getElementById("status").innerText = "Location sent successfully!";
-            })
-            .catch(err => {
-            document.getElementById("status").innerText = "Error sending location.";
+            body: JSON.stringify(payload)
+          })
+          .then(() => {
+            status.innerText = "Location sent successfully! (Accuracy: " + Math.round(position.coords.accuracy) + "m)";
+          })
+          .catch(err => {
+            status.innerText = "Error sending location.";
             console.error(err);
-            });
+          });
         },
         error => {
           status.innerText = "Location permission denied.";
+        },
+        {
+          enableHighAccuracy: true, // 🔑 HIGH ACCURACY ENABLED
+          timeout: 10000,            // Wait up to 10 seconds
+          maximumAge: 0              // Do not use cached location
         }
       );
     }
