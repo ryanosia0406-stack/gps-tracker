@@ -2,18 +2,18 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Instant GPS Sender</title>
+  <title>GPS Logger</title>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       text-align: center;
       padding: 30px;
     }
 
     button {
       font-size: 20px;
-      padding: 15px 30px;
+      padding: 15px 25px;
     }
 
     #status {
@@ -25,72 +25,56 @@
 
 <body>
 
-  <h2>Instant GPS Sender</h2>
-  <button onclick="sendLocation()">Send Location</button>
-  <div id="status">Initializing GPS...</div>
+  <h2>GPS Location Logger</h2>
+  <button onclick="sendLocation()">Send My Location</button>
+  <div id="status"></div>
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkHb2TtxK2PGaDLQl2S2Jjeum3x1kPm8SI-6LI1pdkl7lbCNkeyekqz-4lsx_8JRQV/exec";
 
-    let latestPosition = null;
-    let watchId = null;
-
-    // Start GPS immediately
-    if ("geolocation" in navigator) {
-      watchId = navigator.geolocation.watchPosition(
-        position => {
-          latestPosition = position;
-          document.getElementById("status").innerText =
-            "GPS Ready (Accuracy: " +
-            Math.round(position.coords.accuracy) + "m)";
-        },
-        error => {
-          document.getElementById("status").innerText =
-            "GPS Error: " + error.message;
-        },
-        {
-          enableHighAccuracy: false, // 🔑 speed boost
-          maximumAge: 10000,         // use cached fixes
-          timeout: 5000
-        }
-      );
-    } else {
-      document.getElementById("status").innerText =
-        "Geolocation not supported.";
-    }
-
     function sendLocation() {
       const status = document.getElementById("status");
 
-      if (!latestPosition) {
-        status.innerText = "Waiting for GPS...";
+      if (!navigator.geolocation) {
+        status.innerText = "Geolocation not supported.";
         return;
       }
 
-      const payload = {
-        latitude: latestPosition.coords.latitude,
-        longitude: latestPosition.coords.longitude,
-        accuracy: latestPosition.coords.accuracy,
-        device: "iPhone Chrome"
-      };
+      status.innerText = "Getting location...";
 
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors", // REQUIRED for iOS + Apps Script
-        body: JSON.stringify(payload)
-      });
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const payload = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            device: "iPhone Browser"
+          };
 
-      status.innerText = "Location sent instantly ✔️";
+          fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                device: "iPhone Chrome"
+            })
+            })
+            .then(() => {
+            document.getElementById("status").innerText = "Location sent successfully!";
+            })
+            .catch(err => {
+            document.getElementById("status").innerText = "Error sending location.";
+            console.error(err);
+            });
+        },
+        error => {
+          status.innerText = "Location permission denied.";
+        }
+      );
     }
-
-    // Optional: stop GPS when leaving page
-    window.addEventListener("beforeunload", () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    });
   </script>
 
 </body>
 </html>
-
